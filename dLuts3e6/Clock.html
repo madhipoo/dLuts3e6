@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	body {
+		overflow: hidden
+	}
+	#info{
+	   position: absolute;
+	   padding: 10px;
+	   width: 100%;
+	   top: 5%;
+	   text-align: center;
+	   color:
+	}
+	.hide{
+	  display: none;
+	}
+</style>
+</head>
+
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<div id= "info">My first Three.js
+<br/>
+<br/>
+<button id="toggle" style="width:20%"> toggle start</button>
+<button id="Quartz" class= "btn " style="width:20%"> Quartz </button>
+<button id="Sector" class= "btn hide" style="width:20%"> Sector </button>
+<button id="Analog" class= "btn hide" style="width:20%">  Analog </button>
+</div>
+<script>
+var renderer, scene, camera;
+var controls, cube;
+var turn = false, test=1;
+var angle = 0;  // initialization IMPORTANT!
+var group;
+var cir;
+var flag=1;
+$("#Analog").click(function() {
+  test=1;
+  $("#Analog").addClass("hide");
+  $("#Quartz").removeClass("hide");
+});
+$("#Quartz").click(function() {
+	test=2;
+  setTimeout(move,1000);
+  $("#Sector").removeClass("hide");
+  $("#Quartz").addClass("hide");
+});
+$("#Sector").click(function() {
+	test=3;
+  $("#Sector").addClass("hide");
+  $("#Analog").removeClass("hide");
+});
+init();
+animate();
+var geometry = new THREE.CircleGeometry( 6, 50 );
+var material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+var circle = new THREE.Mesh( geometry, material );
+scene.add( circle );
+$("#toggle").click(function() {
+  turn = !turn;
+  if(turn&&test==2)setTimeout(move,0);
+});
+function init () {
+	
+	renderer = new THREE.WebGLRenderer();
+	document.body.appendChild (renderer.domElement);
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+	renderer.setSize (width, height);
+	
+	renderer.setClearColor (0x888888);
+	
+	scene = new THREE.Scene();
+	var grid = new THREE.GridHelper(30,30, 0xaaaa00, 0x333333);
+	scene.add (grid);
+	var axes = new THREE.AxisHelper (5);
+	scene.add (axes);
+	
+	camera = new THREE.PerspectiveCamera (35, width/height, 1, 100);
+	camera.position.y = 16;
+	camera.position.z = 40;
+	camera.lookAt (new THREE.Vector3(0,0,0));
+	
+	controls = new THREE.OrbitControls(camera, renderer.domElement);
+	
+	window.addEventListener('resize', onWindowResize, false);
+	///////////////////////////////////////////////////////////////
+  var cubegeometry = new THREE.BoxBufferGeometry( 0.5, 5, 0.3 );
+  var cubematerial = new THREE.MeshBasicMaterial( {color: "purple"} );
+  var cube = new THREE.Mesh( cubegeometry, cubematerial );
+  cube.position.set(0,2.5,0);
+  //scene.add( cube );
+  
+  var conegeometry = new THREE.ConeBufferGeometry( 0.7, 0.7, 20 );
+	var conematerial = new THREE.MeshBasicMaterial( {color: "purple"} );
+	var cone = new THREE.Mesh( conegeometry, conematerial );
+  cone.position.set(0,5,0);
+	//scene.add( cone );
+  
+	group = new THREE.Group();
+  group.add (cube);
+  group.add (cone);
+  scene.add(group);
+}
+function onWindowResize() {
+  
+	var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+	
+}
+function animate() {
+	if(turn){
+  	if(test==1){
+    	if(flag==0){
+      	angle = 2*Math.PI-angle;
+        flag=1;
+      }
+      angle += 2*Math.PI/60/60;
+      group.rotation.z = -angle;
+      scene.remove(cir);
+      scene.add(group);
+      scene.add(circle);
+  	}
+    if(test==2){
+    scene.remove(group);
+    scene.remove(circle);
+   	group.rotation.z = -angle;
+    //sleep(1200);
+    scene.add(group);
+    scene.add(circle);
+  	}
+    if(test==3){
+    scene.remove(cir);
+    scene.remove(group);
+    scene.remove(circle);
+    if(angle>0){
+    	if(flag==1){
+      	flag=0;
+        angle = 2*Math.PI-angle;
+      }
+      angle -= 2*Math.PI/60/60;
+    }
+    else {
+    	angle= 2*Math.PI;
+    }
+    
+    var circlegeometry = new THREE.CircleGeometry( 6, 50,1.55,angle);
+		var circlematerial = new THREE.MeshBasicMaterial( { color: "purple" } );
+		cir = new THREE.Mesh( circlegeometry, circlematerial );
+    
+    var circle2geometry = new THREE.CircleGeometry( 6, 50);
+		var circle2material = new THREE.MeshBasicMaterial( { color: "gray" } );
+		cir2 = new THREE.Mesh( circle2geometry, circle2material );
+    cir2.position.set(0,0,-0.2);
+    scene.add(cir);
+    scene.add(cir2);
+  	}
+}
+	controls.update();
+  requestAnimationFrame(animate);
+  render();
+}
+function render() {
+	
+	renderer.render(scene, camera);
+	
+}
+function move(){
+  if(turn&&test==2){
+    setTimeout(move,1000);
+    angle += 2*Math.PI/60;
+   }
+}
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+</script>
+</body>
+</html>
