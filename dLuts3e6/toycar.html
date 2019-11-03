@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <style>
+	#info{
+		width: 100%;
+		padding: 5px;
+		text-align: center;
+		color: #000000
+	}
+	
+	body {
+		overflow: hidden;
+	}
+	</style>
+	<meta charset="utf-8"/>
+</head>
+<body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script>
+	<script src="https://threejs.org/build/three.min.js"></script>
+	<script src="https://threejs.org/examples/js/controls/OrbitControls.js">
+	</script>
+	<div id="info">HW3</div>
+	<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+	<script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/loaders/MTLLoader.js"></script>
+    <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/loaders/OBJLoader.js"></script>
+	<script>
+		var orthoCam,cas;
+		var camera, scene, renderer, mesh, controls;
+		var keyboard = new KeyboardState();
+		var clock;
+		var cylinder;
+		var cylinders = [];
+
+		var car;
+		var pos = new THREE.Vector3();
+		var speed, angle, vel;
+		var theObject = new THREE.Object3D();
+		class Cylinder {
+		  constructor(x, z, rad) {
+			this.x = x;
+			this.z = z;
+			this.rad = rad;
+		  }
+		}
+		(function() {
+		  Math.clamp = function(val, min, max) {
+			return Math.min(Math.max(val, min), max);
+
+		  }
+		})();
+
+		init();
+		animate();
+
+		function loadCubemap() {
+
+			var path = "background/";
+			var format = '.jpg';
+			var urls = [
+			path + 'posx' + format, path + 'negx' + format,
+			path + 'posy' + format, path + 'negy' + format,
+			path + 'posz' + format, path + 'negz' + format
+			];
+			var loader = new THREE.CubeTextureLoader();
+			loader.setCrossOrigin ('');
+			var cubeMap = loader.load(urls);
+			cubeMap.format = THREE.RGBFormat;
+			return cubeMap;
+
+		}
+
+		function init() {
+
+		  clock = new THREE.Clock();
+		  scene = new THREE.Scene();
+
+		  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+		  camera.position.x = 0;
+		  camera.position.y = 20;
+		  camera.position.z = 100;
+		  orthoCam = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+
+		  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+		  scene.add(gridXZ);
+
+		  renderer = new THREE.WebGLRenderer();
+		  renderer.setSize(window.innerWidth, window.innerHeight);
+		  renderer.setClearColor(0x888888);
+
+		  document.body.appendChild(renderer.domElement);
+		  ////////////////////////////////////////////////////////////////////////
+		  speed = 0.0;
+		  angle = 0.0;
+
+		  clock = new THREE.Clock();
+
+		  pointLight = new THREE.PointLight(0xffff00);
+		  scene.add(pointLight);
+		  /*lightSphere = new THREE.Mesh(new THREE.SphereGeometry(5),
+		  new THREE.MeshBasicMaterial({
+			  color: 0xffff00,
+		  }));
+		  scene.add(lightSphere);*/
+
+		  var ambientLight = new THREE.AmbientLight(0x111111);
+		  scene.add(ambientLight);
+
+		  for (let i = 0; i < 20; i++) {
+			let x = 7 - Math.random() * 4;
+			let geometry = new THREE.CylinderBufferGeometry(x, x, 8, 32);
+			let material = new THREE.MeshLambertMaterial({
+			  color: 'purple'
+			});
+			cylinder = new THREE.Mesh(geometry, material);
+			cylinder.position.set(100 - (Math.random() * 200), 4, 100 - (Math.random() * 200));
+			cylinders[i] = new Cylinder(cylinder.position.x, cylinder.position.z, x);
+			scene.add(cylinder);
+		  }
+		  	car = new THREE.Group();
+		 	readModel ('model');
+			//car.position.set(0,0,0);
+			scene.add(car);
+			cubeMap = loadCubemap();
+  			scene.background = cubeMap;
+			renderer.autoClear = false;
+		}
+
+		function update(dt) {
+
+		  keyboard.update();
+		  if (keyboard.pressed("left"))
+			angle += 0.03;
+		  if (keyboard.pressed("right"))
+			angle -= 0.03;
+		  if (keyboard.pressed("up"))
+			speed -= 1.0;
+		  if (keyboard.pressed("down"))
+			speed += 0.5;
+
+		  speed = Math.clamp(speed, -40.0, 10.0);
+		  vel = new THREE.Vector3(speed, 0, 0);
+
+		  vel.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+		  pos.add(vel.clone().multiplyScalar(dt));
+		}
+
+		function animate() {
+
+		  var dt = clock.getDelta();
+		  update(dt);
+		  car.position.copy(pos);
+		  car.rotation.y = angle;
+
+		  if (checkIntersect()){
+			speed = 0;
+		  }
+
+		  pointLight.position.set(-50, 40, -50);
+		  //lightSphere.position.copy(pointLight.position);
+
+		  requestAnimationFrame(animate);
+		  render();
+		}
+		function checkIntersect() {
+
+
+		let r1 = car.localToWorld(new THREE.Vector3(15, 0, 7));
+		let r2 = car.localToWorld(new THREE.Vector3(-15, 0, -5));
+		let r3 = car.localToWorld(new THREE.Vector3(15, 0, -5));
+		let r4 = car.localToWorld(new THREE.Vector3(-15, 0, 5));
+		let circles = [];
+		let rads = [];
+		for (let i = 0; i < 20; i++){
+		rads[i] = cylinders[i].rad * cylinders[i].rad;
+		}
+		for (let i = 0; i < 20; i++) {
+		if ((r1.x-cylinders[i].x) * (r1.x-cylinders[i].x) + (r1.z-cylinders[i].z) * (r1.z-cylinders[i].z) < rads[i]) {
+			return true;
+		}
+		if ((r2.x-cylinders[i].x) * (r2.x-cylinders[i].x) +(r2.z-cylinders[i].z) * (r2.z-cylinders[i].z) < rads[i]) {
+			return true;
+		}
+		if ((r3.x-cylinders[i].x) * (r3.x-cylinders[i].x) + (r3.z-cylinders[i].z) * (r3.z-cylinders[i].z) < rads[i]) {
+			return true;
+		}
+		if ((r4.x-cylinders[i].x) * (r4.x-cylinders[i].x) + (r4.z-cylinders[i].z) * (r4.z-cylinders[i].z) < rads[i]) {
+			return true;
+		}
+		}
+		}
+		function readModel(modelName='toycar', targetSize = 30) {
+
+		var onProgress = function(xhr) {
+		if (xhr.lengthComputable) {
+			var percentComplete = xhr.loaded / xhr.total * 100;
+			console.log(Math.round(percentComplete, 2) + '% downloaded');
+		}
+		};
+
+		var onError = function(xhr) {};
+
+		var mtlLoader = new THREE.MTLLoader();
+		//mtlLoader.setPath('models/');
+		mtlLoader.load(modelName + '.mtl', function(materials) {
+
+		materials.preload();
+
+		var objLoader = new THREE.OBJLoader();
+		objLoader.setMaterials(materials);
+		//objLoader.setPath('models/');
+		objLoader.load(modelName + '.obj', function(object) {
+			unitize(object, targetSize);
+			theObject.setRotationFromEuler(new THREE.Euler(3.1416 / 2, 0, -3.1416 / 2, 'ZYX'))
+			car.add(theObject);
+		}, onProgress, onError);
+
+
+		});
+
+		}
+
+
+		function unitize(object, targetSize) {
+
+
+		var box3 = new THREE.Box3();
+		box3.setFromObject(object);
+		var size = new THREE.Vector3();
+		size.subVectors(box3.max, box3.min);
+		var center = new THREE.Vector3();
+		center.addVectors(box3.max, box3.min).multiplyScalar(0);
+
+		var objSize = Math.max(size.x, size.y, size.z);
+		var scaleSet = targetSize / objSize;
+
+		theObject.add(object);
+		object.scale.set(scaleSet, scaleSet, scaleSet);
+		object.position.set(-center.x * scaleSet, -center.y * scaleSet, -center.z * scaleSet);
+		object.rotation.z += Math.PI / 2;
+		object.rotation.x += Math.PI;
+		scene.add(theObject);
+
+		}
+		function render() {
+		  renderer.clear();
+		  let WW = window.innerWidth;
+		  let HH = window.innerHeight;
+		  camera.aspect=WW/2/HH;
+      	  //camera.updateProjectionMatrix();
+		  renderer.setViewport(0, 0, WW / 2, HH);
+		  camera.position.set (car.position.x-20,10,car.position.z);
+		  camera.lookAt (car.position);
+		  renderer.render(scene, camera);
+
+		  renderer.setViewport(WW / 2, 0, WW / 2, HH);
+		  orthoCam.position.set(car.position.x, 80, car.position.z);
+		  orthoCam.lookAt(car.position);
+		  renderer.render(scene, orthoCam);
+		}
+
+
+	</script>
+</body>
+</html>
