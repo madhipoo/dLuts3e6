@@ -109,7 +109,7 @@
 		  //scene.add(lschelper);
 		  
 		  chair = new THREE.Group();
-		  readModel ('chair',200);
+		  readModel ('chair',120);
 		  scene.add(chair);
 
 		  desklamp = new THREE.Group();
@@ -576,9 +576,9 @@
 		var scaleSet = targetSize / objSize;
 		theObject1.add(object1);
 		object1.scale.set(scaleSet, scaleSet, scaleSet);
-		object1.position.set(-center.x * scaleSet-50, -center.y * scaleSet, -center.z * scaleSet-80);
-		object1.rotation.z += Math.PI / 2;
-		object1.rotation.x += Math.PI;
+		object1.position.set(-center.x * scaleSet, -center.y * scaleSet, -center.z * scaleSet-80);
+		object1.rotation.z += Math.PI;
+		object1.rotation.y -= Math.PI/2;
 		object1.traverse (
 		  function (object1) {
 			if (object1 instanceof THREE.Mesh) {
@@ -616,7 +616,7 @@
 		});
 
 		}
-
+ 
 		function unitize2(object2, targetSize) {
 		var box32 = new THREE.Box3();
 		box32.setFromObject(object2);
